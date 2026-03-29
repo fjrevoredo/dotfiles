@@ -75,24 +75,6 @@ New-Item -Path "HKCU:\Software\Classes\Directory\Background\shell\WezTerm\comman
     -Value 'wezterm-gui.exe start --cwd "%V"' -Force | Out-Null
 Write-Host "[OK] Explorer context menu registered" -ForegroundColor Green
 
-# ── 4. SSH config for 1Password agent ─────────────────────────────────────────
-$sshDir = "$HOME\.ssh"
-$sshConfigPath = "$sshDir\config"
-
-if (-not (Test-Path $sshDir)) {
-    New-Item -ItemType Directory -Path $sshDir | Out-Null
-}
-
-if (-not (Test-Path $sshConfigPath)) {
-    @"
-Host *
-  IdentityAgent "\\.\pipe\openssh-ssh-agent"
-"@ | Set-Content -Path $sshConfigPath -Encoding UTF8
-    Write-Host "[OK] SSH config created for 1Password agent" -ForegroundColor Green
-} else {
-    Write-Host "[SKIP] SSH config already exists — review manually if 1Password agent is needed" -ForegroundColor Yellow
-}
-
 Write-Host ""
 Write-Host "WezTerm and Nushell Windows integration complete." -ForegroundColor Cyan
 Write-Host 'Install Nushell separately if `nu` is not already available on PATH.' -ForegroundColor Cyan
