@@ -1,19 +1,16 @@
 # My Dotfiles
 
-A cross-platform dotfiles repository for keeping my macOS and Windows 11 terminal environments perfectly synced.
+A cross-platform dotfiles repository for keeping the terminal experience aligned across Windows, macOS, and Linux.
 
 ## What's Inside
 
-Currently, this repository manages my **WezTerm** configuration:
+This repository manages a shared terminal stack:
 
-* **Custom Matrix Theme:** High-contrast phosphor green on pure black.
-* **Streamlined UI:** Borderless windows with a conditionally hidden, modern tab bar.
-* **Centered Startup:** Auto-centers the terminal window on launch.
-* **Font:** JetBrains Mono (Size 15.0) with ligatures.
+* **WezTerm:** A shared `.wezterm.lua` with the existing Matrix theme, centered startup, and tmux-style pane bindings.
+* **Nushell:** Shared `config.nu` and `env.nu` so the default shell experience is consistent across platforms.
+* **Safe Fallbacks:** WezTerm prefers `nu` when it exists and falls back to the native platform shell when it does not.
 
 ### Custom Keybindings
-
-I use a custom `tmux`-style workflow to prevent shortcut collisions between macOS and Windows.
 
 * **Leader Key:** `Ctrl + A` (Timeout: 1000ms)
 
@@ -22,14 +19,51 @@ I use a custom `tmux`-style workflow to prevent shortcut collisions between macO
 | **Split Pane Right** | `Leader` + `d` |
 | **Split Pane Top** | `Leader` + `w` |
 | **Navigate Panes** | `Leader` + `Arrow Keys` |
-| **Close Active Pane**| `Leader` + `x` |
+| **Close Active Pane** | `Leader` + `x` |
 
 ## Installation
 
-To use these dotfiles on a new machine, clone the repository to your home folder and create a symlink to the configuration files.
+Clone the repo into your home directory and run the platform installer. Both installers create symlinks and refuse to overwrite existing non-symlink config files.
 
-### macOS (zsh)
+### macOS / Linux
 
 ```bash
-git clone [https://github.com/fjrevoredo/dotfiles.git](https://github.com/fjrevoredo/dotfiles.git) ~/dotfiles
-ln -s ~/dotfiles/.wezterm.lua ~/.wezterm.lua
+git clone https://github.com/fjrevoredo/dotfiles.git ~/dotfiles
+cd ~/dotfiles
+./install.sh
+```
+
+### Windows
+
+```powershell
+git clone https://github.com/fjrevoredo/dotfiles.git $HOME\dotfiles
+Set-Location $HOME\dotfiles
+.\install.ps1
+```
+
+## Nushell Layout
+
+The shared Nushell files live in `nushell/` inside this repo.
+
+* `config.nu`: interactive shell behavior, aliases, and WezTerm helpers.
+* `env.nu`: minimal environment setup.
+
+Shared helpers:
+
+* `wez`: starts WezTerm in the current directory.
+* `weztab`: tries `wezterm cli spawn` first and falls back to `wezterm start`.
+
+Install targets:
+
+* **Windows:** `%AppData%\nushell\`
+* **macOS:** `~/Library/Application Support/nushell/`
+* **Linux:** `~/.config/nushell/`
+
+## Windows Note
+
+On Windows, the shared Nushell config disables the `osc133` and `osc633` shell-integration markers. In WezTerm this avoided a rendering bug where the visible terminal content shifted upward on every keypress while typing at the prompt.
+
+## Notes
+
+* Install Nushell separately if `nu` is not already on your `PATH`.
+* Existing shell-specific aliases in PowerShell or zsh can be removed after you are fully on Nushell.

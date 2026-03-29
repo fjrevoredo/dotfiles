@@ -2,6 +2,39 @@
 local wezterm = require 'wezterm'
 local act = wezterm.action
 
+local target = wezterm.target_triple
+local is_windows = target:find('windows') ~= nil
+local is_macos = target:find('apple%-darwin') ~= nil
+
+local function command_exists(command)
+  local check_command
+
+  if is_windows then
+    check_command = { 'cmd.exe', '/c', 'where ' .. command .. ' >nul 2>nul && echo 1' }
+  else
+    check_command = { 'sh', '-lc', 'if command -v ' .. command .. ' >/dev/null 2>&1; then printf 1; fi' }
+  end
+
+  local success, stdout, _ = wezterm.run_child_process(check_command)
+  return success and stdout:gsub('%s+', '') == '1'
+end
+
+local function default_shell()
+  if command_exists('nu') then
+    return { 'nu' }
+  end
+
+  if is_windows then
+    return { 'pwsh.exe', '-NoLogo' }
+  end
+
+  if is_macos then
+    return { 'zsh', '-l' }
+  end
+
+  return { 'bash', '-l' }
+end
+
 -- ============================================================================
 -- WINDOW POSITIONING (Center on startup)
 -- ============================================================================
@@ -47,10 +80,7 @@ local config = wezterm.config_builder()
 -- ============================================================================
 -- 1. OS & Environment
 -- ============================================================================
--- Automatically use PowerShell 7 on Windows. macOS will default to zsh.
-if wezterm.target_triple == 'x86_64-pc-windows-msvc' then
-  config.default_prog = { 'pwsh.exe', '-NoLogo' }
-end
+config.default_prog = default_shell()
 
 -- ============================================================================
 -- 2. Look & Feel
@@ -85,7 +115,7 @@ config.use_fancy_tab_bar = true
 config.hide_tab_bar_if_only_one_tab = false 
 
 -- Borderless/integrated title bar look
-if wezterm.target_triple == 'x86_64-pc-windows-msvc' then
+if is_windows then
   config.window_decorations = "RESIZE"
 else
   config.window_decorations = "RESIZE|INTEGRATED_BUTTONS"

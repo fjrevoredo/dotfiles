@@ -1,5 +1,7 @@
 # WezTerm Windows 11 Integration Summary
 
+This document outlines the Windows-specific pieces for a shared WezTerm + Nushell setup.
+
 ## 1. Explorer Context Menu (Right-Click "Open Here")
 
 To add WezTerm to the Windows 11 context menu for directories, a registry entry is used. This allows right-clicking in any folder background to open a WezTerm instance there.
@@ -11,13 +13,15 @@ To add WezTerm to the Windows 11 context menu for directories, a registry entry 
 New-Item -Path "HKCU:\Software\Classes\Directory\Background\shell\WezTerm" -Value "Open in WezTerm" -Force
 New-Item -Path "HKCU:\Software\Classes\Directory\Background\shell\WezTerm\command" -Value "wezterm-gui.exe start --cwd \"%V\"" -Force
 
-## 2. PowerShell Profile Alias
+## 2. Shared Shell
 
-Added an alias to PowerShell 7 to allow spawning new tabs or windows from the command line quickly.
+Nushell is the preferred shell inside WezTerm. Shared shell helpers now live in the repo-owned Nushell config instead of the PowerShell profile.
 
-* File: $HOME\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
-* Command: Set-Alias -Name wez -Value wezterm-gui.exe
-* Function for Tabs: function wez-tab { wezterm cli spawn --cwd . }
+* Preferred Shell: `nu`
+* WezTerm Fallback: `pwsh.exe -NoLogo`
+* Shared Helper: `weztab` tries `wezterm cli spawn --cwd <current dir>` and falls back to `wezterm start`
+* Shared Helper: `wez` runs `wezterm start --cwd <current dir>`
+* Windows-Specific Workaround: `osc133` and `osc633` are disabled in `nushell/config.nu` because they caused WezTerm to visually scroll the screen upward on each keypress while typing.
 
 ## 3. IntelliJ IDEA Integration
 
@@ -41,13 +45,15 @@ Host *
 
 ## 5. Dotfile Symlinking
 
-Ensures the configuration is synced from the GitHub repository to the Windows User Profile.
+Ensures both WezTerm and Nushell configs are synced from the GitHub repository to the Windows user profile.
 
 * Requirement: Windows Developer Mode must be ON (Settings > System > For Developers)
 * Repository Path: $HOME\dotfiles\.wezterm.lua
-* System Link Command (PowerShell): 
-New-Item -ItemType SymbolicLink -Path "$HOME\.wezterm.lua" -Target "$HOME\dotfiles\.wezterm.lua"
-
-* [Create install.ps1 for Windows](gemini://submit_prompt?text=Create+a+PowerShell+script+named+install.ps1+to+automate+the+symlink+creation+on+Windows)
-* [Create install.sh for macOS](gemini://submit_prompt?text=Create+a+bash+script+named+install.sh+to+automate+the+symlink+creation+on+macOS)
-* [Add a README.md to the repo](gemini://submit_prompt?text=Draft+a+comprehensive+README.md+for+the+dotfiles+repository)
+* Nushell Repo Paths:
+  * $HOME\dotfiles\nushell\config.nu
+  * $HOME\dotfiles\nushell\env.nu
+* System Link Commands (PowerShell):
+  * `New-Item -ItemType SymbolicLink -Path "$HOME\.wezterm.lua" -Target "$HOME\dotfiles\.wezterm.lua"`
+  * `New-Item -ItemType SymbolicLink -Path "$env:APPDATA\nushell\config.nu" -Target "$HOME\dotfiles\nushell\config.nu"`
+  * `New-Item -ItemType SymbolicLink -Path "$env:APPDATA\nushell\env.nu" -Target "$HOME\dotfiles\nushell\env.nu"`
+* Installer: `$HOME\dotfiles\install.ps1`
