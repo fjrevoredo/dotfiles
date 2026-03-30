@@ -12,7 +12,7 @@ local function executable_exists(path)
   if is_windows then
     check_command = { 'cmd.exe', '/c', 'if exist "' .. path .. '" echo 1' }
   else
-    check_command = { 'sh', '-lc', 'if [ -x "' .. path .. '" ]; then printf 1; fi' }
+    check_command = { 'sh', '-c', 'if [ -x "' .. path .. '" ]; then printf 1; fi' }
   end
 
   local success, stdout, _ = wezterm.run_child_process(check_command)
@@ -25,7 +25,7 @@ local function command_exists(command)
   if is_windows then
     check_command = { 'cmd.exe', '/c', 'where ' .. command .. ' >nul 2>nul && echo 1' }
   else
-    check_command = { 'sh', '-lc', 'if command -v ' .. command .. ' >/dev/null 2>&1; then printf 1; fi' }
+    check_command = { 'sh', '-c', 'if command -v ' .. command .. ' >/dev/null 2>&1; then printf 1; fi' }
   end
 
   local success, stdout, _ = wezterm.run_child_process(check_command)
@@ -37,49 +37,55 @@ local function find_nu()
     return 'nu'
   end
 
-  if is_macos then
-    local macos_candidates = {
-      '/opt/homebrew/bin/nu',
-      '/usr/local/bin/nu',
-    }
+  local home = os.getenv('HOME') or ''
+  local candidates = {
+    '/usr/bin/nu',
+    '/usr/local/bin/nu',
+    '/opt/homebrew/bin/nu',
+    home .. '/.cargo/bin/nu',
+    home .. '/.local/bin/nu',
+    '/snap/bin/nu',
+  }
 
-    for _, path in ipairs(macos_candidates) do
-      if executable_exists(path) then
-        return path
-      end
+  for _, path in ipairs(candidates) do
+    if executable_exists(path) then
+      return path
     end
   end
 
   return nil
 end
 
+local nu_found = false
+
 local function default_shell()
   local nu_path = find_nu()
 
   if nu_path ~= nil then
+    nu_found = true
     return { nu_path }
   end
+
+  wezterm.log_warn('wezterm: nushell (nu) not found on PATH or in common install locations; falling back to default shell')
 
   if is_windows then
     return { 'pwsh.exe', '-NoLogo' }
   end
 
-  if is_macos then
-    return { 'zsh', '-l' }
-  end
-
-  return nil
+  return { 'zsh', '-l' }
 end
 
 -- ============================================================================
 -- WINDOW POSITIONING (Center on startup)
 -- ============================================================================
 wezterm.on('gui-startup', function(cmd)
-  -- Spawn the main window
   local tab, pane, window = wezterm.mux.spawn_window(cmd or {})
   local gui_window = window:gui_window()
-  
-  -- Grab the active screen's dimensions and the window's pixel dimensions
+
+  if not nu_found then
+    gui_window:toast_notification('wezterm', 'nushell (nu) not found; falling back to default shell', nil, 7000)
+  end
+
   local screen = wezterm.gui.screens().active
   local dimensions = gui_window:get_dimensions()
 
