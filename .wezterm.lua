@@ -42,6 +42,8 @@ local function find_nu()
     '/usr/bin/nu',
     '/usr/local/bin/nu',
     '/opt/homebrew/bin/nu',
+    home .. '/.linuxbrew/bin/nu',
+    '/home/linuxbrew/.linuxbrew/bin/nu',
     home .. '/.cargo/bin/nu',
     home .. '/.local/bin/nu',
     '/snap/bin/nu',
