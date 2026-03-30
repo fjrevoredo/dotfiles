@@ -6,6 +6,19 @@ local target = wezterm.target_triple
 local is_windows = target:find('windows') ~= nil
 local is_macos = target:find('apple%-darwin') ~= nil
 
+local function executable_exists(path)
+  local check_command
+
+  if is_windows then
+    check_command = { 'cmd.exe', '/c', 'if exist "' .. path .. '" echo 1' }
+  else
+    check_command = { 'sh', '-lc', 'if [ -x "' .. path .. '" ]; then printf 1; fi' }
+  end
+
+  local success, stdout, _ = wezterm.run_child_process(check_command)
+  return success and stdout:gsub('%s+', '') == '1'
+end
+
 local function command_exists(command)
   local check_command
 
@@ -19,9 +32,32 @@ local function command_exists(command)
   return success and stdout:gsub('%s+', '') == '1'
 end
 
-local function default_shell()
+local function find_nu()
   if command_exists('nu') then
-    return { 'nu' }
+    return 'nu'
+  end
+
+  if is_macos then
+    local macos_candidates = {
+      '/opt/homebrew/bin/nu',
+      '/usr/local/bin/nu',
+    }
+
+    for _, path in ipairs(macos_candidates) do
+      if executable_exists(path) then
+        return path
+      end
+    end
+  end
+
+  return nil
+end
+
+local function default_shell()
+  local nu_path = find_nu()
+
+  if nu_path ~= nil then
+    return { nu_path }
   end
 
   if is_windows then
