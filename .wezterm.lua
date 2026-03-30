@@ -68,7 +68,7 @@ local function default_shell()
     return { 'zsh', '-l' }
   end
 
-  return { 'bash', '-l' }
+  return nil
 end
 
 -- ============================================================================
@@ -116,7 +116,11 @@ local config = wezterm.config_builder()
 -- ============================================================================
 -- 1. OS & Environment
 -- ============================================================================
-config.default_prog = default_shell()
+local shell = default_shell()
+
+if shell ~= nil then
+  config.default_prog = shell
+end
 
 -- ============================================================================
 -- 2. Look & Feel
@@ -153,8 +157,10 @@ config.hide_tab_bar_if_only_one_tab = false
 -- Borderless/integrated title bar look
 if is_windows then
   config.window_decorations = "RESIZE"
-else
+elseif is_macos then
   config.window_decorations = "RESIZE|INTEGRATED_BUTTONS"
+else
+  config.window_decorations = "RESIZE"
 end
 
 -- ============================================================================

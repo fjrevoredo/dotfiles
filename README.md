@@ -23,7 +23,7 @@ This repository manages a shared terminal stack:
 
 ## Installation
 
-Clone the repo into your home directory and run the platform installer. Both installers create symlinks and refuse to overwrite existing non-symlink config files.
+Clone the repo into your home directory and run the platform installer. Both installers create symlinks, keep correct existing symlinks in place, and back up existing non-symlink config files before replacing them.
 
 ### macOS / Linux
 
@@ -57,7 +57,13 @@ Install targets:
 
 * **Windows:** `%AppData%\nushell\`
 * **macOS:** `~/Library/Application Support/nushell/`
-* **Linux:** `~/.config/nushell/`
+* **Linux:** `${XDG_CONFIG_HOME}/nushell/` when `XDG_CONFIG_HOME` is set to an absolute path, otherwise `~/.config/nushell/`
+
+Shell fallback behavior:
+
+* **Windows:** falls back to `pwsh.exe -NoLogo` when `nu` is unavailable.
+* **macOS:** falls back to `zsh -l` when `nu` is unavailable.
+* **Linux:** falls back to WezTerm's native login-shell resolution when `nu` is unavailable.
 
 ## Windows Note
 
@@ -66,4 +72,5 @@ On Windows, the shared Nushell config disables the `osc133` and `osc633` shell-i
 ## Notes
 
 * Install Nushell separately if `nu` is not already on your `PATH`.
+* On macOS, GUI apps may not inherit Homebrew paths, so `.wezterm.lua` also checks common absolute Nushell locations.
 * Existing shell-specific aliases in PowerShell or zsh can be removed after you are fully on Nushell.

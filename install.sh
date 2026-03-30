@@ -4,6 +4,15 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+linux_config_home() {
+  if [[ -n "${XDG_CONFIG_HOME:-}" && "${XDG_CONFIG_HOME}" = /* ]]; then
+    printf '%s\n' "$XDG_CONFIG_HOME"
+    return
+  fi
+
+  printf '%s\n' "$HOME/.config"
+}
+
 link_file() {
   local source_path="$1"
   local target_path="$2"
@@ -38,7 +47,7 @@ case "$(uname -s)" in
     nushell_dir="$HOME/Library/Application Support/nushell"
     ;;
   Linux)
-    nushell_dir="${XDG_CONFIG_HOME:-$HOME/.config}/nushell"
+    nushell_dir="$(linux_config_home)/nushell"
     ;;
   *)
     printf '[ERROR] Unsupported OS for install.sh\n' >&2
