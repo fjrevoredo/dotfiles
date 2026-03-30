@@ -18,6 +18,7 @@ Used to open any folder in a new WezTerm tab directly from the Finder right-clic
 Nushell is the preferred shell inside WezTerm. Shared shell helpers now live in the repo-owned Nushell config instead of `~/.zshrc`.
 
 * Preferred Shell: `nu`
+* macOS Detection: `.wezterm.lua` checks both `PATH` and common Homebrew install locations such as `/opt/homebrew/bin/nu`
 * WezTerm Fallback: `zsh -l`
 * Shared Helper: `weztab` tries `wezterm cli spawn --cwd <current dir>` and falls back to `wezterm start`
 * Shared Helper: `wez` runs `wezterm start --cwd <current dir>`
@@ -43,6 +44,8 @@ Set as the default handler for shell executable files.
 ## 5. Dotfile Symlinking
 
 The repo now owns both WezTerm and Nushell config files.
+
+The installer is the safer option because it backs up existing non-symlink files before replacing them.
 
 * Repository Path: ~/dotfiles/.wezterm.lua
 * Nushell Repo Paths:

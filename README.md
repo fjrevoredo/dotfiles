@@ -25,6 +25,12 @@ This repository manages a shared terminal stack:
 
 Clone the repo into your home directory and run the platform installer. Both installers create symlinks, keep correct existing symlinks in place, and back up existing non-symlink config files before replacing them.
 
+Platform references:
+
+* [WEZTERM_MACOS_INTEGRATION.md](/Users/francisco.revoredo/Documents/private/dotfiles/WEZTERM_MACOS_INTEGRATION.md)
+* [WEZTERM_LINUX_INTEGRATION.md](/Users/francisco.revoredo/Documents/private/dotfiles/WEZTERM_LINUX_INTEGRATION.md)
+* [WEZTERM_W11_INTEGRATION.md](/Users/francisco.revoredo/Documents/private/dotfiles/WEZTERM_W11_INTEGRATION.md)
+
 ### macOS / Linux
 
 ```bash

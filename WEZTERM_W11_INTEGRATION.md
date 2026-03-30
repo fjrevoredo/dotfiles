@@ -47,6 +47,8 @@ Host *
 
 Ensures both WezTerm and Nushell configs are synced from the GitHub repository to the Windows user profile.
 
+The installer is the safer option because it backs up existing non-symlink files before replacing them.
+
 * Requirement: Windows Developer Mode must be ON (Settings > System > For Developers)
 * Repository Path: $HOME\dotfiles\.wezterm.lua
 * Nushell Repo Paths:
