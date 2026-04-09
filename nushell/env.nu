@@ -1,4 +1,13 @@
 # Keep env.nu minimal; shared interactive behavior belongs in config.nu.
+def get_zsh_path_with_nvm [zsh_cmd: string, current_path_str: string] {
+  # Ask Zsh to load nvm, activate the default alias, and print its PATH.
+  let nvm_setup = 'export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; for nvm_sh in "$NVM_DIR/nvm.sh" "/opt/homebrew/opt/nvm/nvm.sh" "/usr/local/opt/nvm/nvm.sh" "$HOME/.linuxbrew/opt/nvm/nvm.sh" "/home/linuxbrew/.linuxbrew/opt/nvm/nvm.sh"; do if [ -s "$nvm_sh" ]; then . "$nvm_sh"; nvm use --silent default >/dev/null 2>&1; break; fi; done'
+
+  (with-env { PATH: $"/usr/bin:/bin:/opt/homebrew/bin:($current_path_str)" } {
+    ^$zsh_cmd -ic $"($nvm_setup); echo \"BEG_PATH\"; echo $PATH; echo \"END_PATH\"" | complete
+  }).stdout
+}
+
 if ($nu.os-info.name == "windows") {
   let home_bin = $"($nu.home-dir)\\bin"
   if $home_bin not-in $env.PATH {
@@ -13,15 +22,9 @@ if ($nu.os-info.name == "windows") {
   if ($zsh_cmd | path exists) or (which zsh | is-not-empty) {
     # Serialize Nushell's PATH so the shell subprocess gets one clean string.
     let current_path_str = ($env.PATH | flatten | str join (char esep))
-    
-    # Ask Zsh to print its PATH after loading nvm and activating the default
-    # nvm alias. That makes the resulting PATH include node/npm from nvm.
-    let zsh_raw = (with-env { PATH: $"/usr/bin:/bin:/opt/homebrew/bin:($current_path_str)" } {
-      ^$zsh_cmd -ic 'export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"; for nvm_sh in "$NVM_DIR/nvm.sh" "/opt/homebrew/opt/nvm/nvm.sh" "/usr/local/opt/nvm/nvm.sh" "$HOME/.linuxbrew/opt/nvm/nvm.sh" "/home/linuxbrew/.linuxbrew/opt/nvm/nvm.sh"; do if [ -s "$nvm_sh" ]; then . "$nvm_sh"; nvm use --silent default >/dev/null 2>&1; break; fi; done; echo "BEG_PATH"; echo $PATH; echo "END_PATH"' | complete
-    }).stdout
 
     # Extract only the PATH payload from the sentinel-wrapped Zsh output.
-    let zsh_path_str = ($zsh_raw 
+    let zsh_path_str = (get_zsh_path_with_nvm $zsh_cmd $current_path_str
       | lines 
       | skip until { |it| $it == "BEG_PATH" } 
       | skip 1 
