@@ -8,6 +8,7 @@ This repository manages a shared terminal stack:
 
 * **WezTerm:** A shared `.wezterm.lua` with the existing Matrix theme, centered startup, and tmux-style pane bindings.
 * **Nushell:** Shared `config.nu` and `env.nu` so the default shell experience is consistent across platforms.
+* **Pi:** `pi/` contains bootstrap scripts plus shared workflow documentation for a Pi setup with local auth, models, and sessions kept per machine.
 * **Safe Fallbacks:** WezTerm prefers `nu` when it exists and falls back to the native platform shell when it does not.
 
 ### Custom Keybindings
@@ -74,6 +75,15 @@ Shell fallback behavior:
 ## Windows Note
 
 On Windows, the shared Nushell config disables the `osc133` and `osc633` shell-integration markers. In WezTerm this avoided a rendering bug where the visible terminal content shifted upward on every keypress while typing at the prompt.
+
+## Pi Documentation
+
+The shared Pi setup is documented in:
+
+* `pi/README.md` - long-lived workflow and maintenance guide
+* `pi/PLAN.md` - implementation plan and checklist
+* `pi/install.ps1` - Windows Pi bootstrap/sync script
+* `pi/install.sh` - macOS/Linux Pi bootstrap/sync script
 
 ## Notes
 
