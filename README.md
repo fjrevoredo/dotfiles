@@ -9,6 +9,7 @@ This repository manages a shared terminal stack:
 * **WezTerm:** A shared `.wezterm.lua` with the existing Matrix theme, centered startup, and tmux-style pane bindings.
 * **Nushell:** Shared `config.nu` and `env.nu` so the default shell experience is consistent across platforms.
 * **Pi:** `pi/` contains bootstrap scripts plus shared workflow documentation for a Pi setup with local auth, models, and sessions kept per machine.
+* **OpenCode:** `opencode/` contains TUI plugins and install notes, including a footer badge with the Herdr pane and tab id.
 * **Safe Fallbacks:** WezTerm prefers `nu` when it exists and falls back to the native platform shell when it does not.
 
 ### Custom Keybindings
@@ -84,6 +85,13 @@ The shared Pi setup is documented in:
 * `pi/PLAN.md` - implementation plan and checklist
 * `pi/install.ps1` - Windows Pi bootstrap/sync script
 * `pi/install.sh` - macOS/Linux Pi bootstrap/sync script
+
+## OpenCode Plugins
+
+The shared OpenCode plugin sources live in `opencode/`:
+
+* `opencode/README.md` - install instructions for each plugin
+* `opencode/plugins/herdr-pane-id/tui.tsx` - shows the Herdr pane and tab id in the OpenCode footer
 
 ## Notes
 

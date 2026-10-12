@@ -12,6 +12,8 @@ Cross-platform dotfiles repository managing a shared WezTerm + Nushell terminal 
 - `install.sh`: macOS/Linux installer (creates symlinks, backs up existing files).
 - `install.ps1`: Windows installer (creates symlinks, registers Explorer context menu).
 - `README.md`: user-facing setup instructions.
+- `opencode/plugins/herdr-pane-id/tui.tsx`: OpenCode TUI plugin that shows the Herdr pane and tab id in the footer.
+- `opencode/README.md`: install instructions for the OpenCode plugins.
 - `WEZTERM_MACOS_INTEGRATION.md`, `WEZTERM_LINUX_INTEGRATION.md`, `WEZTERM_W11_INTEGRATION.md`: platform-specific integration notes.
 
 There is no `src/` or test suite; changes are made directly in config and installer files.
