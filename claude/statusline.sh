@@ -18,6 +18,59 @@ try {
 " "$input" "$1" 2>/dev/null
 }
 
+# Terminal width: Claude Code sets COLUMNS for the status line (tput does not work here).
+# Keep a 2-column margin: emoji count as one character below but draw two columns wide.
+cols=${COLUMNS:-}
+[[ "$cols" =~ ^[0-9]+$ ]] && [ "$cols" -gt 20 ] || cols=100
+max_w=$((cols - 2))
+
+# Character counting needs a UTF-8 locale (agent shells often run in C).
+for _loc in en_US.UTF-8 C.UTF-8 UTF-8; do
+  if locale -a 2>/dev/null | grep -qix "${_loc//-/}\|$_loc"; then export LC_ALL="$_loc"; break; fi
+done
+
+# Cut a string that holds literal "\033[..m" colour codes to $2 visible characters,
+# ending with an ellipsis. Prints the result with the escape codes expanded.
+_fit() {
+  local s i ch out="" n=0 max=$2 cut=0
+  s=$(printf '%b' "$1")
+  for ((i = 0; i < ${#s}; i++)); do
+    ch=${s:i:1}
+    if [ "$ch" = $'\033' ]; then
+      out+="$ch"
+      while [ $((++i)) -lt ${#s} ]; do
+        ch=${s:i:1}; out+="$ch"
+        [ "$ch" = m ] && break
+      done
+      continue
+    fi
+    if [ "$n" -ge "$max" ]; then cut=1; break; fi
+    out+="$ch"; n=$((n + 1))
+  done
+  if [ "$cut" = 1 ]; then
+    # drop the last visible character to make room for the ellipsis
+    out="${out%?}…"
+    out+=$'\033[0m'
+  fi
+  printf '%s' "$out"
+}
+
+# Shorten a path to $2 characters: herdr worktrees become wt:<repo>/<name>, and a
+# path that is still too long keeps only its last two directories.
+_short_path() {
+  local p=$1 max=$2 base
+  if [[ "$p" =~ /\.herdr/worktrees/([^/]+)/(.*)$ ]]; then
+    p="wt:${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+  fi
+  if [ "${#p}" -gt "$max" ]; then
+    base=${p%/}
+    local last=${base##*/}; base=${base%/*}
+    local prev=${base##*/}
+    p="…/${prev}/${last}"
+  fi
+  printf '%s' "$p"
+}
+
 # Current directory — full path with home dir collapsed to ~, mirroring the
 # Nushell default left_prompt. Windows backslashes are normalised to forward slashes.
 cwd=$(_jval workspace.current_dir)
@@ -36,6 +89,9 @@ fi
 
 # Git branch (skip optional locks to avoid hanging)
 branch=$(git -C "$cwd" --no-optional-locks branch --show-current 2>/dev/null)
+# Hide the branch when it repeats the directory name (herdr worktrees do: worktree/x vs worktree-x)
+dir_base=${cwd_fwd%/}; dir_base=${dir_base##*/}
+[ -n "$branch" ] && [ "${branch//\//-}" = "$dir_base" ] && branch=""
 
 # Model + reasoning effort
 model=$(_jval model.display_name)
@@ -80,18 +136,24 @@ _fmt_daytime() {
 RESET='\033[0m'
 ACCENT='\033[1;36m'
 
-# --- Line 1: dir (branch) [Model · effort]  bar pct% tokens ---
-line1_parts=()
-[ -n "$dir" ]    && line1_parts+=("$dir")
-[ -n "$branch" ] && line1_parts+=("($branch)")
+# --- Line 1: dir (branch) ---
+path_str=""
+if [ -n "$dir" ]; then
+  branch_part=""
+  [ -n "$branch" ] && branch_part=" ($branch)"
+  path_str="$(_short_path "$dir" $((max_w - ${#branch_part})))${branch_part}"
+fi
+line1="$path_str"
+
+# --- Line 2: [Model · effort]  bar pct% tokens ---
+line2_main=""
 if [ -n "$model" ]; then
   if [ -n "$effort" ]; then
-    line1_parts+=("[$model · $effort]")
+    line2_main="[$model · $effort]"
   else
-    line1_parts+=("[$model]")
+    line2_main="[$model]"
   fi
 fi
-line1="${line1_parts[*]}"
 
 if [ -n "$ctx_pct" ]; then
   pct_int=$(printf '%.0f' "$ctx_pct")
@@ -116,12 +178,12 @@ if [ -n "$ctx_pct" ]; then
   tok_str=""
   [ -n "$used_fmt" ] && [ -n "$size_fmt" ] && tok_str="${ACCENT}${used_fmt}${RESET}/${size_fmt}"
 
-  line1="${line1}  ${COLOR}${BAR}${RESET} ${pct_int}%"
-  [ -n "$tok_str" ] && line1="${line1}  ${tok_str}"
+  line2_main="${line2_main:+$line2_main  }${COLOR}${BAR}${RESET} ${pct_int}%"
+  [ -n "$tok_str" ] && line2_main="${line2_main}  ${tok_str}"
 fi
 
-# --- Line 2: cache + rate limits ---
-line2=""
+# --- Line 3: cache + rate limits ---
+line3=""
 rl_parts=()
 if [ -n "$five_pct" ]; then
   five_str="5h:${ACCENT}$(printf '%.0f' "$five_pct")%${RESET}"
@@ -162,9 +224,9 @@ if [ -n "$cache_warm" ]; then
 fi
 
 if [ -n "$rl_str" ] && [ -n "$cache_str" ]; then
-  line2="${rl_str}  ·  ${cache_str}"
+  line3="${rl_str}  ·  ${cache_str}"
 else
-  line2="${rl_str}${cache_str}"
+  line3="${rl_str}${cache_str}"
 fi
 
 # herdr: pane and tab ids (env inherited from the herdr pane; absent outside herdr)
@@ -172,10 +234,10 @@ herdr_str=""
 [ -n "$HERDR_PANE_ID" ] && herdr_str="pane:${ACCENT}${HERDR_PANE_ID}${RESET}"
 [ -n "$HERDR_TAB_ID" ] && herdr_str="${herdr_str:+$herdr_str }tab:${ACCENT}${HERDR_TAB_ID}${RESET}"
 if [ -n "$herdr_str" ]; then
-  line2="${line2:+$line2  ·  }${herdr_str}"
+  line3="${line3:+$line3  ·  }${herdr_str}"
 fi
 
-echo -e "$line1"
-if [ -n "$line2" ]; then
-  echo -e "$line2"
-fi
+# Print each line cut to the terminal width so Claude Code never truncates it
+for _l in "$line1" "$line2_main" "$line3"; do
+  [ -n "$_l" ] && { _fit "$_l" "$max_w"; printf '\n'; }
+done
