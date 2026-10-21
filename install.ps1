@@ -67,6 +67,7 @@ $nuEnvTarget = Join-Path $repoRoot "nushell\env.nu"
 Set-SymbolicLink -Path $weztermPath -Target $weztermTarget
 Set-SymbolicLink -Path $nuConfigPath -Target $nuConfigTarget
 Set-SymbolicLink -Path $nuEnvPath -Target $nuEnvTarget
+Set-SymbolicLink -Path "$HOME\.claude\statusline.sh" -Target (Join-Path $repoRoot "claude\statusline.sh")
 
 # ── 3. Explorer context menu (right-click "Open in WezTerm") ──────────────────
 New-Item -Path "HKCU:\Software\Classes\Directory\Background\shell\WezTerm" `

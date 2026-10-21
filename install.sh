@@ -58,6 +58,7 @@ esac
 link_file "$repo_root/.wezterm.lua" "$HOME/.wezterm.lua"
 link_file "$repo_root/nushell/config.nu" "$nushell_dir/config.nu"
 link_file "$repo_root/nushell/env.nu" "$nushell_dir/env.nu"
+link_file "$repo_root/claude/statusline.sh" "$HOME/.claude/statusline.sh"
 
-printf '\nWezTerm and Nushell links are in place.\n'
+printf '\nWezTerm, Nushell and Claude Code status line links are in place.\n'
 printf 'Install Nushell separately if `nu` is not already available on PATH.\n'

@@ -10,6 +10,7 @@ This repository manages a shared terminal stack:
 * **Nushell:** Shared `config.nu` and `env.nu` so the default shell experience is consistent across platforms.
 * **Pi:** `pi/` contains bootstrap scripts plus shared workflow documentation for a Pi setup with local auth, models, and sessions kept per machine.
 * **OpenCode:** `opencode/` contains TUI plugins and install notes, including a footer badge with the Herdr pane and tab id.
+* **Claude Code:** `claude/statusline.sh` is the status line script; the installers link it to `~/.claude/statusline.sh`.
 * **Safe Fallbacks:** WezTerm prefers `nu` when it exists and falls back to the native platform shell when it does not.
 
 ### Custom Keybindings
