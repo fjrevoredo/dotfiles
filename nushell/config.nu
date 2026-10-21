@@ -31,6 +31,9 @@ $env.config = ($env.config
     }
 )
 
+# VS Code CLI
+$env.PATH ++= ["/Applications/Visual Studio Code.app/Contents/Resources/app/bin"]
+
 def current-working-directory [] {
   $env.PWD | path expand | into string
 }
