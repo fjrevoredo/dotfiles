@@ -1,4 +1,27 @@
 #!/usr/bin/env bash
+# Claude Code status line.
+#
+# Claude Code runs this script (settings.json -> statusLine.command) every time the status
+# bar refreshes. It sends one JSON object on stdin and draws whatever we print on stdout
+# (one printed line = one status row). Source of truth: dotfiles repo, claude/statusline.sh;
+# ~/.claude/statusline.sh is a symlink to it (see install.sh / install.ps1). It also runs on
+# Windows (Git Bash), so stay portable: plain bash, node for JSON, no jq/python.
+#
+# Layout, built in four steps:
+#   1. Parse the JSON once and read the terminal width (COLUMNS).
+#   2. Build "segments": small independent pieces of text (path, model, context bar, ...).
+#   3. Pack the segments, in order, into as few lines as fit the width.
+#   4. Print the lines, cutting any that are still too wide.
+# Why: when everything sat on fixed lines, long herdr worktree paths made Claude Code cut
+# the line with "…" and hide the model and the context bar. Fitting the width ourselves
+# keeps every segment visible. The footer below the status line (permission mode, MR badge,
+# agents) is drawn by Claude Code itself and cannot be changed from here.
+#
+# Test by piping sample JSON in, e.g.:
+#   echo '{"cwd":"/tmp","model":{"display_name":"X"}}' | COLUMNS=60 bash statusline.sh
+# Colours are kept as literal "\033[..m" text in variables and expanded with printf '%b'
+# only when measuring or printing, so ${#var} never counts them by accident.
+
 input=$(cat)
 
 # Parse JSON with node — Claude Code is a Node.js app so node is guaranteed
@@ -6,6 +29,8 @@ input=$(cat)
 # jq is commonly missing from Git Bash's PATH on Windows in non-interactive
 # subprocess contexts; python3 is also unreliable on Windows.
 # One node call reads every field: one value per line, empty when missing.
+# _fields (JSON dot-paths) and the variable names in the loop below must stay in the same
+# order: value N of the node output goes into name N.
 _fields=(
   workspace.current_dir cwd model.display_name effort.level
   context_window.used_percentage context_window.total_input_tokens
@@ -15,6 +40,8 @@ _fields=(
   prompt_cache.warm prompt_cache.hit_ratio prompt_cache.expires_at
 )
 _vals=()
+# CR is stripped because node on Windows may print CRLF. A missing field gives an empty line,
+# so positions never shift. Invalid JSON gives no output, so every value stays empty.
 while IFS= read -r _line; do
   _vals+=("${_line%$'\r'}")
 done < <(node -e "
@@ -27,6 +54,7 @@ try {
   }
 } catch (e) {}
 " "$input" "${_fields[@]}" 2>/dev/null)
+# Variables are assigned by name (printf -v); the names are what the rest of the script uses.
 _i=0
 for _name in cwd_ws cwd_alt model effort ctx_pct in_tokens out_tokens ctx_size \
              five_pct five_resets_at week_pct week_resets_at \
@@ -36,18 +64,26 @@ for _name in cwd_ws cwd_alt model effort ctx_pct in_tokens out_tokens ctx_size \
 done
 
 # Terminal width: Claude Code sets COLUMNS for the status line (tput does not work here).
-# Keep a 2-column margin: emoji count as one character below but draw two columns wide.
+# Fall back to 100 when it is missing or not a sensible number.
+# Keep a 2-column margin: emoji count as one character below but draw two columns wide, and
+# the margin also absorbs small differences in how Claude Code measures the width.
 cols=${COLUMNS:-}
 [[ "$cols" =~ ^[0-9]+$ ]] && [ "$cols" -gt 20 ] || cols=100
 max_w=$((cols - 2))
 
-# Character counting needs a UTF-8 locale (agent shells often run in C).
+# ${#var} and ${var:i:1} count bytes in the C locale, which would break the width maths for
+# "·", "…", the bar blocks and emoji. Switch to the first UTF-8 locale this machine has
+# (macOS: en_US.UTF-8; Git Bash and Linux: C.UTF-8 or en_US.UTF-8). If none is found we
+# keep the current locale and the widths may be off for non-ASCII text.
 for _loc in en_US.UTF-8 C.UTF-8 UTF-8; do
   if locale -a 2>/dev/null | grep -qix "${_loc//-/}\|$_loc"; then export LC_ALL="$_loc"; break; fi
 done
 
-# Cut a string that holds literal "\033[..m" colour codes to $2 visible characters,
-# ending with an ellipsis. Prints the result with the escape codes expanded.
+# _fit STRING MAX: print STRING cut to MAX visible characters, with colour codes expanded.
+# STRING holds literal "\033[..m" codes. They are copied through without being counted, so a
+# cut never splits a code. A cut string ends with "…" (replacing the last kept character)
+# and a colour reset, so a colour that was open cannot leak into the next line.
+# Only used as a last resort: the packing step already keeps normal lines within the width.
 _fit() {
   local s i ch out="" n=0 max=$2 cut=0
   s=$(printf '%b' "$1")
@@ -72,8 +108,11 @@ _fit() {
   printf '%s' "$out"
 }
 
-# Shorten a path to $2 characters: herdr worktrees become wt:<repo>/<name>, and a
-# path that is still too long keeps only its last two directories.
+# _short_path PATH MAX: shorten PATH (already with ~ for home) to fit MAX characters.
+#   1. herdr worktrees (~/.herdr/worktrees/<repo>/<name>[/sub]) become wt:<repo>/<name>[/sub],
+#      because the long prefix says nothing the repo and worktree name do not.
+#   2. If it is still longer than MAX, keep only the last two directories: …/prev/last.
+# The result can still be too long on a very narrow terminal; _fit cuts it at print time.
 _short_path() {
   local p=$1 max=$2 base
   if [[ "$p" =~ /\.herdr/worktrees/([^/]+)/(.*)$ ]]; then
@@ -88,8 +127,9 @@ _short_path() {
   printf '%s' "$p"
 }
 
-# Current directory — full path with home dir collapsed to ~, mirroring the
-# Nushell default left_prompt. Windows backslashes are normalised to forward slashes.
+# Current directory: workspace.current_dir, else cwd. Home is collapsed to ~, mirroring the
+# Nushell default prompt. Windows backslashes are normalised to forward slashes.
+# $cwd_fwd (forward-slash path) is also used below for the branch check.
 cwd=${cwd_ws:-$cwd_alt}
 if [ -n "$cwd" ]; then
   cwd_fwd="${cwd//\\//}"
@@ -101,13 +141,17 @@ if [ -n "$cwd" ]; then
   fi
 fi
 
-# Git branch (skip optional locks to avoid hanging)
+# Git branch. --no-optional-locks stops git from taking the index lock, so the status line
+# never blocks or interferes with a git command running in the session. Empty outside a repo
+# or on a detached HEAD.
 branch=$(git -C "$cwd" --no-optional-locks branch --show-current 2>/dev/null)
-# Hide the branch when it repeats the directory name (herdr worktrees do: worktree/x vs worktree-x)
+# Hide the branch when it only repeats the directory name. herdr names a worktree directory
+# "worktree-x" and its branch "worktree/x"; comparing with "/" turned into "-" catches that.
 dir_base=${cwd_fwd%/}; dir_base=${dir_base##*/}
 [ -n "$branch" ] && [ "${branch//\//-}" = "$dir_base" ] && branch=""
 
-# Human-readable token counts, e.g. 45.2K, and total context size, e.g. 200K
+# _fmt_tokens N: human-readable token count, e.g. 850 -> 850, 45200 -> 45.2K, 200000 -> 200K.
+# Prints nothing for an empty N.
 _fmt_tokens() {
   local n=$1
   if [ -z "$n" ]; then echo ""; return; fi
@@ -118,21 +162,24 @@ _fmt_tokens() {
   fi
 }
 
-# Compact time/day stamp, e.g. "17:00 06/09"
+# _fmt_daytime EPOCH: local time and date of a Unix timestamp, e.g. "17:00 06/09" (HH:MM DD/MM).
 # GNU date (Linux, Windows Git Bash) uses -d; BSD date (macOS) uses -r.
 _fmt_daytime() {
   date -d "@$1" "+%H:%M %d/%m" 2>/dev/null || date -r "$1" "+%H:%M %d/%m" 2>/dev/null
 }
 
-# Accent color for the numbers that matter most at a glance: token counts,
-# 5h%, and 7d%.
+# Colour codes, kept as literal text (see the header). ACCENT (bold cyan) marks the numbers
+# that matter most at a glance: token counts, 5h%, 7d%, pane and tab ids.
 RESET='\033[0m'
 ACCENT='\033[1;36m'
 
-# Segments, in display order. Empty ones are skipped. Each holds literal "\033[..m" codes.
+# Segments, in display order. A segment is added only when its data exists, so a missing
+# field just makes the line shorter. Order matters: the packing step never reorders, so the
+# most important segments come first. Keep each one self-contained and short; the packing
+# step breaks lines only between segments, never inside one.
 segments=()
 
-# Path (+ branch)
+# Path (+ branch). The path gets the width left after the branch, so the branch stays whole.
 if [ -n "$dir" ]; then
   branch_part=""
   [ -n "$branch" ] && branch_part=" ($branch)"
@@ -148,7 +195,8 @@ if [ -n "$model" ]; then
   fi
 fi
 
-# Context bar, percentage, tokens
+# Context bar, percentage, tokens used / window size. The colour warns as the context fills:
+# green below 100k tokens, yellow from 100k, red from 150k.
 if [ -n "$ctx_pct" ]; then
   pct_int=$(printf '%.0f' "$ctx_pct")
 
@@ -158,6 +206,7 @@ if [ -n "$ctx_pct" ]; then
   elif [ "$total_tokens" -ge 100000 ]; then COLOR='\033[33m' # yellow: >=100k tokens
   else COLOR='\033[32m'; fi                                  # green
 
+  # 10-cell bar: filled cells ▓, empty cells ░ (capped so a pct over 100 cannot overflow)
   BAR_WIDTH=10
   FILLED=$((pct_int * BAR_WIDTH / 100))
   [ "$FILLED" -gt "$BAR_WIDTH" ] && FILLED=$BAR_WIDTH
@@ -175,7 +224,8 @@ if [ -n "$ctx_pct" ]; then
   segments+=("$ctx_str")
 fi
 
-# Rate limits: 5h and 7d
+# Rate limits: used % of the 5-hour and 7-day windows, plus when each one resets.
+# Two separate segments so a narrow terminal can put them on different lines.
 if [ -n "$five_pct" ]; then
   five_str="5h:${ACCENT}$(printf '%.0f' "$five_pct")%${RESET}"
   if [ -n "$five_resets_at" ]; then
@@ -193,7 +243,8 @@ if [ -n "$week_pct" ]; then
   segments+=("$week_str")
 fi
 
-# Cache: 🔥/❄️ warm indicator, hit-ratio percentage, and TTL remaining
+# Prompt cache: 🔥 warm / ❄️ cold, hit ratio in %, and (only while warm and not yet expired)
+# the time the cache expires.
 cache_str=""
 if [ -n "$cache_warm" ]; then
   if [ "$cache_warm" = "true" ]; then cache_icon="🔥"; else cache_icon="❄️"; fi
@@ -215,14 +266,18 @@ fi
 
 [ -n "$cache_str" ] && segments+=("$cache_str")
 
-# herdr: pane and tab ids (env inherited from the herdr pane; absent outside herdr)
+# herdr: pane and tab ids (env inherited from the herdr pane; absent outside herdr).
+# Useful for `herdr agent prompt <pane_id>` and for telling sessions apart.
 herdr_str=""
 [ -n "$HERDR_PANE_ID" ] && herdr_str="pane:${ACCENT}${HERDR_PANE_ID}${RESET}"
 [ -n "$HERDR_TAB_ID" ] && herdr_str="${herdr_str:+$herdr_str }tab:${ACCENT}${HERDR_TAB_ID}${RESET}"
 [ -n "$herdr_str" ] && segments+=("$herdr_str")
 
-# Pack the segments into as few lines as possible, keeping their order: add each one
-# to the current line while it fits, otherwise start a new line with it.
+# Pack the segments into as few lines as possible, keeping their order (greedy fill):
+# add each segment to the current line while it fits (joined with $sep), otherwise start
+# a new line with it. Because the order is fixed, this gives the fewest possible lines.
+# Width = visible characters only: colour codes are removed before measuring.
+# extglob is needed for the +(...) pattern that strips the codes.
 shopt -s extglob
 sep="  ·  "
 sep_w=${#sep}
@@ -230,6 +285,7 @@ lines=()
 cur=""
 cur_w=0
 for seg in "${segments[@]}"; do
+  # expand the literal codes into real escape characters, then delete them to get the text
   expanded=$(printf '%b' "$seg")
   plain=${expanded//$'\033'\[+([0-9;])m/}
   seg_w=${#plain}
@@ -244,7 +300,8 @@ for seg in "${segments[@]}"; do
 done
 [ -n "$cur" ] && lines+=("$cur")
 
-# A single segment wider than the terminal is still cut so Claude Code never truncates it
+# Print. _fit only changes a line when one segment alone is wider than the terminal
+# (very narrow terminal); then we cut it ourselves so Claude Code does not cut it for us.
 for _l in "${lines[@]}"; do
   _fit "$_l" "$max_w"; printf '\n'
 done
