@@ -11,6 +11,7 @@ This repository manages a shared terminal stack:
 * **Pi:** `pi/` contains bootstrap scripts plus shared workflow documentation for a Pi setup with local auth, models, and sessions kept per machine.
 * **OpenCode:** `opencode/` contains TUI plugins and install notes, including a footer badge with the Herdr pane and tab id.
 * **Claude Code:** `claude/statusline.sh` is the status line script; the installers link it to `~/.claude/statusline.sh`.
+* **Herdr app:** `herdr-app/` contains the Matrix theme and window settings for the Herdr app.
 * **Safe Fallbacks:** WezTerm prefers `nu` when it exists and falls back to the native platform shell when it does not.
 
 ### Custom Keybindings
@@ -93,6 +94,18 @@ The shared OpenCode plugin sources live in `opencode/`:
 
 * `opencode/README.md` - install instructions for each plugin
 * `opencode/plugins/herdr-pane-id/tui.tsx` - shows the Herdr pane and tab id in the OpenCode footer
+
+## Herdr App
+
+The shared Herdr look lives in `herdr-app/`:
+
+* `herdr-app/settings.json` - zoom, theme, appearance, sounds
+* `herdr-app/themes/matrix.json` - Matrix terminal palette and green UI colors
+* `herdr-app/install.ps1`, `herdr-app/install.sh` - copy both files into `~/.config/herdr-app`
+
+Both scripts copy the files, skip equal files and back up different ones. The
+theme sets light green window colors on purpose: the derived panel colors are
+gray and change the accent to teal. See `herdr-app/README.md` for details.
 
 ## Notes
 

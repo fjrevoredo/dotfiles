@@ -1,0 +1,10 @@
+{
+  "zoom": 1.15,
+  "theme": "matrix",
+  "sounds": {
+    "enabled": true
+  },
+  "minimum_contrast": 1,
+  "appearance": "dark",
+  "telemetry": false
+}

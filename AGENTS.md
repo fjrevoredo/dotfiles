@@ -14,6 +14,7 @@ Cross-platform dotfiles repository managing a shared WezTerm + Nushell terminal 
 - `README.md`: user-facing setup instructions.
 - `opencode/plugins/herdr-pane-id/tui.tsx`: OpenCode TUI plugin that shows the Herdr pane and tab id in the footer.
 - `opencode/README.md`: install instructions for the OpenCode plugins.
+- `herdr-app/`: Herdr app look — `settings.json`, `themes/matrix.json`, copy installers and notes.
 - `WEZTERM_MACOS_INTEGRATION.md`, `WEZTERM_LINUX_INTEGRATION.md`, `WEZTERM_W11_INTEGRATION.md`: platform-specific integration notes.
 
 There is no `src/` or test suite; changes are made directly in config and installer files.
