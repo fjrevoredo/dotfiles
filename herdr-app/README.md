@@ -27,13 +27,18 @@ sets:
 | `foreground` | `#d8ffd8` | 18.4:1 on the sidebar |
 | `muted` | `#a7d6a7` | 12.3:1 |
 | `dim` | `#7cb87c` | 8.6:1 |
-| `accent` | `#00ff41` | 14.7:1 |
+| `accent` | `#9fd8a8` | 12.3:1 |
+| `solid` (primary buttons) | `#00ff41` | 14.7:1 |
 | `chrome`, `surface`, `popover` | `#050805`, `#0a0f0a`, `#0d140d` | backgrounds |
 | `hover`, `selected` | `#162316`, `#1c3a1e` | states |
 | `border`, `input` | `#2b4a29`, `#46703f` | lines |
 
 Terminal text keeps the pure Matrix green. Only the window chrome uses the
 lighter greens.
+
+`accent` is a pastel mint on purpose. It draws the focus ring around the
+focused terminal pane, and the neon `#00ff41` there reads as a selected window.
+`solid` stays neon for primary buttons.
 
 ### The size
 
