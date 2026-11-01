@@ -148,6 +148,22 @@ config.colors = {
   selection_bg = '#00ff41',
 }
 
+-- Kitty graphics protocol (needed for images inside herdr panes)
+config.enable_kitty_graphics = true
+
+-- Keep bold at the previous weight. Newer builds map bold to ExtraBold.
+config.font_rules = {
+  {
+    intensity = 'Bold',
+    font = wezterm.font('JetBrains Mono', { weight = 'DemiBold' }),
+  },
+  {
+    intensity = 'Bold',
+    italic = true,
+    font = wezterm.font('JetBrains Mono', { weight = 'DemiBold', italic = true }),
+  },
+}
+
 -- Increased font size for better readability
 config.font = wezterm.font('JetBrains Mono')
 config.font_size = 15.0
