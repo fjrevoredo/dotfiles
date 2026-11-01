@@ -25,17 +25,20 @@ sets:
 
 | Role | Color | Contrast |
 | :--- | :--- | :--- |
-| `foreground` | `#d8ffd8` | 18.4:1 on the sidebar |
-| `muted` | `#a7d6a7` | 12.3:1 |
-| `dim` | `#7cb87c` | 8.6:1 |
+| `foreground` | `#80ffa0` | 16.0:1 on the sidebar |
+| `muted` | `#52f07d` | 15.4:1 |
+| `dim` | `#3fbf63` | 8.4:1 |
 | `accent` | `#00ff41` | 14.7:1 |
 | `solid` (primary buttons) | `#00ff41` | 14.7:1 |
-| `chrome`, `surface`, `popover` | `#050805`, `#0a0f0a`, `#0d140d` | backgrounds |
-| `hover`, `selected` | `#162316`, `#1c3a1e` | states |
-| `border`, `input` | `#2b4a29`, `#46703f` | lines |
+| `chrome`, `surface`, `popover` | `#030a04`, `#07130a`, `#0a1a0c` | backgrounds |
+| `hover`, `selected` | `#13301a`, `#1d4a24` | states |
+| `border`, `input` | `#356b45`, `#4f9a5f` | lines |
 
 Terminal text keeps the pure Matrix green. Only the window chrome uses the
 lighter greens.
+
+The UI greens are full-saturation tints of the terminal green, not gray. That
+keeps the phosphor look on the sidebar, the tabs and the bars.
 
 ### The focus ring
 
@@ -46,11 +49,11 @@ as "this window is selected all the time".
 `layouts/main-plain.json` is a copy of Herdr's `main` with one change:
 
 ```json
-"focus": { "width": 1, "color": "#00ff4173" }
+"focus": { "width": 1, "color": "#00ff414d" }
 ```
 
-`73` is the alpha channel: the same neon green at 45 percent. On the black
-canvas it draws `#00731d`, a faint line. Every other use of `accent` stays
+`4d` is the alpha channel: the same neon green at 30 percent. On the black
+canvas it draws `#004d14`, a faint line. Every other use of `accent` stays
 neon, because the theme is unchanged.
 
 The copy is needed because `layouts/main.json` belongs to Herdr and is
