@@ -12,6 +12,7 @@ The app stores its config in `~/.config/herdr-app` on every platform.
 | :--- | :--- |
 | `settings.json` | zoom (1.15), theme (`matrix`), dark appearance, sounds, terminal contrast, telemetry off |
 | `themes/matrix.json` | the Matrix theme: terminal colors and the UI colors |
+| `layouts/main-plain.json` | Herdr's `main` layout with a faint focus ring around the focused pane |
 
 ### The theme
 
@@ -27,7 +28,7 @@ sets:
 | `foreground` | `#d8ffd8` | 18.4:1 on the sidebar |
 | `muted` | `#a7d6a7` | 12.3:1 |
 | `dim` | `#7cb87c` | 8.6:1 |
-| `accent` | `#9fd8a8` | 12.3:1 |
+| `accent` | `#00ff41` | 14.7:1 |
 | `solid` (primary buttons) | `#00ff41` | 14.7:1 |
 | `chrome`, `surface`, `popover` | `#050805`, `#0a0f0a`, `#0d140d` | backgrounds |
 | `hover`, `selected` | `#162316`, `#1c3a1e` | states |
@@ -36,9 +37,25 @@ sets:
 Terminal text keeps the pure Matrix green. Only the window chrome uses the
 lighter greens.
 
-`accent` is a pastel mint on purpose. It draws the focus ring around the
-focused terminal pane, and the neon `#00ff41` there reads as a selected window.
-`solid` stays neon for primary buttons.
+### The focus ring
+
+The pane `focus` border takes its color from `accent`, and there is no
+separate theme color for it. A neon `#00ff41` ring around the terminal reads
+as "this window is selected all the time".
+
+`layouts/main-plain.json` is a copy of Herdr's `main` with one change:
+
+```json
+"focus": { "width": 1, "color": "#00ff4173" }
+```
+
+`73` is the alpha channel: the same neon green at 45 percent. On the black
+canvas it draws `#00731d`, a faint line. Every other use of `accent` stays
+neon, because the theme is unchanged.
+
+The copy is needed because `layouts/main.json` belongs to Herdr and is
+replaced on every start. A copy does not get Herdr's future changes to `main`.
+Switch with `ctrl-shift-l` or `layout.switch`; Herdr's `main` is still there.
 
 ### The size
 
@@ -66,6 +83,9 @@ as `<name>.pre-dotfiles-<timestamp>.bak`.
 
 Install after the Herdr app has started at least once. The files apply while
 the app runs.
+
+On a new machine, switch to the layout one time: `ctrl-shift-l` until
+`main-plain` shows, or `herdr-app do layout.switch --name main-plain`.
 
 ### Why copy, not symlink
 
@@ -96,9 +116,11 @@ After a change in the app, copy the live files back into this folder:
 ```powershell
 Copy-Item "$HOME\.config\herdr-app\settings.json" .\herdr-app\settings.json
 Copy-Item "$HOME\.config\herdr-app\themes\matrix.json" .\herdr-app\themes\matrix.json
+Copy-Item "$HOME\.config\herdr-app\layouts\main-plain.json" .\herdr-app\layouts\main-plain.json
 ```
 
 ```bash
 cp ~/.config/herdr-app/settings.json ./herdr-app/settings.json
 cp ~/.config/herdr-app/themes/matrix.json ./herdr-app/themes/matrix.json
+cp ~/.config/herdr-app/layouts/main-plain.json ./herdr-app/layouts/main-plain.json
 ```

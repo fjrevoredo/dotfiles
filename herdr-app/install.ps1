@@ -42,6 +42,7 @@ function Copy-ConfigFile {
 
 Copy-ConfigFile -Source (Join-Path $repoRoot "settings.json") -Destination (Join-Path $destRoot "settings.json")
 Copy-ConfigFile -Source (Join-Path $repoRoot "themes\matrix.json") -Destination (Join-Path $destRoot "themes\matrix.json")
+Copy-ConfigFile -Source (Join-Path $repoRoot "layouts\main-plain.json") -Destination (Join-Path $destRoot "layouts\main-plain.json")
 
 Write-Host ""
 Write-Host "Herdr app theme files are in place. Changes apply while the app runs." -ForegroundColor Cyan

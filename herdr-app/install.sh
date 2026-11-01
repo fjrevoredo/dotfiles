@@ -34,6 +34,7 @@ copy_config_file() {
 
 copy_config_file "$repo_root/settings.json" "$dest_root/settings.json"
 copy_config_file "$repo_root/themes/matrix.json" "$dest_root/themes/matrix.json"
+copy_config_file "$repo_root/layouts/main-plain.json" "$dest_root/layouts/main-plain.json"
 
 printf '\nHerdr app theme files are in place. Changes apply while the app runs.\n'
 printf 'Start the Herdr app, or switch to it, to see the Matrix theme.\n'
