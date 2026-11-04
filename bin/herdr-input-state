@@ -1,0 +1,60 @@
+#!/usr/bin/python3 -I
+"""Tell whether a Claude Code agent's input box is empty, shows only a suggestion, or holds typed text.
+
+Usage: herdr-input-state <agent name or pane id>
+Prints one of: empty, suggestion: <text>, typed: <text>, unknown.
+Exit code 0 for empty or suggestion (safe to prompt), 1 for typed or unknown.
+
+Claude Code draws its prompt suggestion dimmed (SGR 2); text the user typed is not dimmed.
+"""
+
+import re
+import subprocess
+import sys
+
+SGR = re.compile(r"\x1b\[([0-9;]*)m")
+
+
+def classify(prompt_line):
+    after = prompt_line.split("❯", 1)[1]
+    dim = False
+    typed, suggested = [], []
+    pos = 0
+    for match in SGR.finditer(after):
+        (suggested if dim else typed).append(after[pos : match.start()])
+        codes = match.group(1).split(";") if match.group(1) else ["0"]
+        if "2" in codes:
+            dim = True
+        if "0" in codes or "22" in codes:
+            dim = "2" in codes and codes.index("2") > max(
+                codes.index(c) for c in codes if c in ("0", "22")
+            )
+        pos = match.end()
+    (suggested if dim else typed).append(after[pos:])
+    typed_text = "".join(typed).replace("\xa0", " ").strip()
+    suggested_text = "".join(suggested).replace("\xa0", " ").strip()
+    if typed_text:
+        return "typed: " + typed_text, 1
+    if suggested_text:
+        return "suggestion: " + suggested_text, 0
+    return "empty", 0
+
+
+def main():
+    screen = subprocess.run(
+        ["herdr", "agent", "read", sys.argv[1], "--source", "visible", "--format", "ansi"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    prompt_lines = [line for line in screen.splitlines() if "❯" in line]
+    if not prompt_lines:
+        print("unknown")
+        return 1
+    state, code = classify(prompt_lines[-1])
+    print(state)
+    return code
+
+
+if __name__ == "__main__":
+    sys.exit(main())

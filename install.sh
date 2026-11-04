@@ -59,6 +59,8 @@ link_file "$repo_root/.wezterm.lua" "$HOME/.wezterm.lua"
 link_file "$repo_root/nushell/config.nu" "$nushell_dir/config.nu"
 link_file "$repo_root/nushell/env.nu" "$nushell_dir/env.nu"
 link_file "$repo_root/claude/statusline.sh" "$HOME/.claude/statusline.sh"
+mkdir -p "$HOME/.local/bin"
+link_file "$repo_root/bin/herdr-input-state" "$HOME/.local/bin/herdr-input-state"
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
   link_file "$repo_root/hammerspoon/init.lua" "$HOME/.hammerspoon/init.lua"
